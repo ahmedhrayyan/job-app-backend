@@ -70,7 +70,7 @@ class Admin(MutateMixin, BaseMixin, db.Model):
 
 class Job(MutateMixin, BaseMixin, db.Model):
     __tablename__ = "jobs"
-    admin_id = sa.Column(sa.Integer, sa.ForeignKey("admins.id"))
+    admin_id = sa.Column(sa.Integer, sa.ForeignKey("admins.id"), nullable=False)
     title = sa.Column(sa.String, nullable=False)
     description = sa.Column(sa.Text, nullable=False)
     vacancy = sa.Column(sa.Integer, nullable=False)

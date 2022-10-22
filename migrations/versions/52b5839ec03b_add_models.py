@@ -1,8 +1,8 @@
-"""add models
+"""Add models
 
-Revision ID: 42e2b976b757
+Revision ID: 52b5839ec03b
 Revises: 
-Create Date: 2022-10-22 15:52:22.720435
+Create Date: 2022-10-22 16:46:08.661242
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '42e2b976b757'
+revision = '52b5839ec03b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,7 +30,7 @@ def upgrade():
     op.create_table('jobs',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('admin_id', sa.Integer(), nullable=True),
+    sa.Column('admin_id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
     sa.Column('vacancy', sa.Integer(), nullable=False),

@@ -1,7 +1,23 @@
 import bleach
-from marshmallow import Schema, fields, post_load, EXCLUDE, validate
-from enum import Enum, unique
+from marshmallow import Schema, fields, post_load, EXCLUDE, validate, ValidationError
+from flask_jwt_extended import current_user
 from .models import Admin, Job
+from pyuploadcare import exceptions
+from utils.uploadcare import uploadcare
+
+
+class Image(fields.Str):
+    """ Custom logic for handling image paths """
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        return uploadcare.file(value).cdn_url
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        try:
+            uploadcare.file(value)
+            return value
+        except exceptions.InvalidParamError:
+            raise ValidationError("Do not exist.")
 
 
 class BaseSchema(Schema):
@@ -50,7 +66,7 @@ class JobSchema(BaseSchema):
     location = fields.Str(required=True)
     type = fields.Int(required=True, validate=validate.OneOf([1, 2]))
     company_name = fields.Str(required=True)
-    company_logo = fields.Str(required=True)
+    company_logo = Image(required=True)
     company_email = fields.Str(required=True)
 
     @post_load
@@ -63,7 +79,7 @@ class JobSchema(BaseSchema):
         if kwargs.get("partial"):
             return data
 
-        return Job(**data)
+        return Job(admin_id=current_user.id, **data)
 
 
 job_schema = JobSchema()

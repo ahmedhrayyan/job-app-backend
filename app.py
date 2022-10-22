@@ -1,11 +1,25 @@
+from os import path
 from flask import Flask, render_template, request, abort
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, current_user
 from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError
 from flask_cors import CORS
 from db import setup_db
 from config import ProductionConfig
+from utils.uploadcare import uploadcare
 import db.schemas as schemas
 import db.models as models
+import utils.helpers as helpers
+
+
+def paginate(query, page: int = 1, per_page: int = 15):
+    """ Return a list of paginated items and a dict contains metadata """
+    meta = {
+        'total': query.count(),
+        'current_page': page,
+        'per_page': per_page,
+    }
+    return query.paginate(page=page, per_page=per_page), meta
 
 
 def create_app(config=ProductionConfig):
@@ -35,6 +49,35 @@ def create_app(config=ProductionConfig):
     def index():
         return render_template("index.html")
 
+    @app.post("/api/upload")
+    @jwt_required()
+    def upload():
+        if 'file' not in request.files:
+            abort(400, "No file founded")
+        file = request.files['file']
+
+        if file.filename == '':
+            abort(400, 'No selected file')
+        file_ext = path.splitext(file.filename)[1][1:]
+        if file_ext not in app.config['ALLOWED_EXTENSIONS']:
+            abort(422, 'You cannot upload %s files' % file_ext)
+        # set name on uploadcare cdn
+        file.name = file.filename
+
+        ucare_file = uploadcare.upload(file.stream)
+
+        return {'path': ucare_file.cdn_path()}
+
+    @app.post("/api/register")
+    def register():
+        admin = schemas.admin_schema.load(request.json)
+        try:
+            admin.insert()
+        except IntegrityError as e:
+            abort(422, helpers.parse_integrity_error(e))
+
+        return {"data": schemas.admin_schema.dump(admin), "token": create_access_token(admin.id)}
+
     @app.post("/api/login")
     def login():
         data = schemas.login_schema.load(request.json)
@@ -43,6 +86,38 @@ def create_app(config=ProductionConfig):
             return abort(422, "Email or password is not correct.")
 
         return {"data": schemas.admin_schema.dump(admin), "token": create_access_token(admin.id)}
+
+    @app.get("/api/profile/jobs")
+    @jwt_required()
+    def get_profile_jobs():
+        page = request.args.get("page", 1, int)
+        jobs, meta = paginate(models.Job.query.filter_by(admin_id=current_user.id), page)
+        return {"data": schemas.job_schema.dump(jobs, many=True), "meta": meta}
+
+    @app.get("/api/jobs")
+    def get_jobs():
+        page = request.args.get("page", 1, int)
+        jobs, meta = paginate(models.Job.query, page)
+        return {"data": schemas.job_schema.dump(jobs, many=True), "meta": meta}
+
+    @app.post("/api/jobs")
+    @jwt_required()
+    def create_job():
+        job = schemas.job_schema.load(request.json)
+        job.insert()
+        return {"data": schemas.job_schema.dump(job)}
+
+    @app.delete("/api/jobs/<int:job_id>")
+    @jwt_required()
+    def delete_job(job_id):
+        target = models.Job.query.get(job_id)
+        if not target:
+            abort(404)
+        if target.admin_id != current_user.id:
+            abort(403)
+
+        target.delete()
+        return {"message": "success"}
 
     # ---------- ERROR HANDLING ---------- #
 
