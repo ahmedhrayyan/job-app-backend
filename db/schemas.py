@@ -34,6 +34,14 @@ class AdminSchema(BaseSchema):
 admin_schema = AdminSchema()
 
 
+class LoginSchema(Schema):
+    email = fields.Email(required=True)
+    password = fields.Str(required=True)
+
+
+login_schema = LoginSchema()
+
+
 class JobSchema(BaseSchema):
     title = fields.Str(required=True)
     description = fields.Str(required=True)

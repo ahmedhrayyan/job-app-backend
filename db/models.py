@@ -1,5 +1,6 @@
 import bcrypt
 import sqlalchemy as sa
+from sqlalchemy.orm import relationship
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, timezone
 from db import db
@@ -48,9 +49,11 @@ class BaseMixin:
 
 
 class Admin(MutateMixin, BaseMixin, db.Model):
+    __tablename__ = "admins"
     email = sa.Column(sa.VARCHAR(64), nullable=False, unique=True)
     name = sa.Column(sa.String, nullable=False)
-    _password = sa.Column(sa.BINARY, nullable=False)
+    _password = sa.Column(sa.LargeBinary, nullable=False)
+    jobs = relationship("Job", cascade="all, delete")
 
     @property
     def password(self):
@@ -66,6 +69,8 @@ class Admin(MutateMixin, BaseMixin, db.Model):
 
 
 class Job(MutateMixin, BaseMixin, db.Model):
+    __tablename__ = "jobs"
+    admin_id = sa.Column(sa.Integer, sa.ForeignKey("admins.id"))
     title = sa.Column(sa.String, nullable=False)
     description = sa.Column(sa.Text, nullable=False)
     vacancy = sa.Column(sa.Integer, nullable=False)

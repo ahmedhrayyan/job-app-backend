@@ -16,4 +16,4 @@ def setup_db(app):
     if app.config['TESTING'] is True:
         db.create_all()
     else:
-        Migrate(app, db)
+        Migrate(app, db, compare_type=True)
