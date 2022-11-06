@@ -50,7 +50,7 @@ def create_app(config=ProductionConfig):
         return render_template("index.html")
 
     @app.post("/api/upload")
-    @jwt_required()
+    @jwt_required(optional=True)
     def upload():
         if 'file' not in request.files:
             abort(400, "No file founded")

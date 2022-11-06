@@ -79,7 +79,7 @@ class JobSchema(BaseSchema):
         if kwargs.get("partial"):
             return data
 
-        return Job(admin_id=current_user.id, **data)
+        return Job(admin_id=current_user.id if current_user else Admin.query.first().id, **data)
 
 
 job_schema = JobSchema()
