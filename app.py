@@ -64,7 +64,7 @@ def create_app(config=ProductionConfig):
         # set name on uploadcare cdn
         file.name = file.filename
 
-        ucare_file = uploadcare.upload(file.stream)
+        ucare_file = uploadcare.upload(file)
 
         return {'path': ucare_file.cdn_path()}
 
@@ -99,6 +99,11 @@ def create_app(config=ProductionConfig):
         page = request.args.get("page", 1, int)
         jobs, meta = paginate(models.Job.query, page)
         return {"data": schemas.job_schema.dump(jobs, many=True), "meta": meta}
+
+    @app.get("/api/jobs/<int:job_id>")
+    def show_job(job_id):
+        job = models.Job.query.get_or_404(job_id)
+        return {"data": schemas.job_schema.dump(job)}
 
     @app.post("/api/jobs")
     @jwt_required(optional=True)
