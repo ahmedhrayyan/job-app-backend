@@ -101,7 +101,7 @@ def create_app(config=ProductionConfig):
         return {"data": schemas.job_schema.dump(jobs, many=True), "meta": meta}
 
     @app.post("/api/jobs")
-    @jwt_required()
+    @jwt_required(optional=True)
     def create_job():
         job = schemas.job_schema.load(request.json)
         job.insert()
